@@ -15,15 +15,17 @@ class ElektrichkiApp extends Application.AppBase {
         AppBase.initialize();
     }
 
+    (:typecheck(disableGlanceCheck))
     public function getServiceDelegate() as [System.ServiceDelegate] {
         return [new BackgroundService()];
     }
 
-    (:glance)
+    (:glance, :typecheck(disableBackgroundCheck))
     public function getGlanceView() as [WatchUi.GlanceView] or [WatchUi.GlanceView, WatchUi.GlanceViewDelegate] or Null {
         return [new TrainsGlanceView()];
     }
 
+    (:typecheck([disableBackgroundCheck, disableGlanceCheck]))
     public function getInitialView() as [WatchUi.Views] or [WatchUi.Views, WatchUi.InputDelegates] {
         ensureTemporalEvent();
         var view = new TrainsView();
@@ -34,6 +36,7 @@ class ElektrichkiApp extends Application.AppBase {
 
     //! Stations changed. Cached days carry their route key, so the old route's
     //! days are ignored and the view or the next background run fetches anew.
+    (:typecheck(disableBackgroundCheck))
     public function onSettingsChanged() as Void {
         ensureTemporalEvent();
         WatchUi.requestUpdate();
@@ -41,6 +44,7 @@ class ElektrichkiApp extends Application.AppBase {
 
     //! The background service saves directly to Storage (API 3.2.0);
     //! the exit code only tells the open view to redraw.
+    (:typecheck(disableBackgroundCheck))
     public function onBackgroundData(data as Application.PersistableType) as Void {
         WatchUi.requestUpdate();
     }

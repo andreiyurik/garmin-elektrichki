@@ -57,7 +57,7 @@ module Schedule {
     function load(date as String) as Dictionary? {
         var day = Storage.getValue("d:" + date);
         if (day instanceof Dictionary && routeKey().equals(day["r"])) {
-            return day;
+            return day as Dictionary;
         }
         return null;
     }
@@ -65,7 +65,7 @@ module Schedule {
     function save(date as String, day as Dictionary) as Void {
         day["r"] = routeKey();
         day["t"] = Time.now().value();
-        Storage.setValue("d:" + date, day as Dictionary<PropertyKeyType, PropertyValueType>);
+        Storage.setValue("d:" + date, day as Dictionary<Storage.KeyType, Storage.ValueType>);
     }
 
     //! First date in [today, today + DAYS_AHEAD) that is missing or stale, or null.

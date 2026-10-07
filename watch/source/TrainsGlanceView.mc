@@ -34,7 +34,10 @@ class TrainsGlanceView extends WatchUi.GlanceView {
             line = Departures.hhmm(dep) + " · " + (dep - Departures.nowMinutes()) + " "
                 + WatchUi.loadResource($.Rez.Strings.Min);
         }
-        drawLine(dc, h / 4, Graphics.FONT_TINY, "→ " + dest);
+        var size = dc.getFontHeight(Graphics.FONT_TINY) / 3;
+        Draw.arrow(dc, 0, h / 4, size);
+        dc.drawText(size + size / 2 + 2, h / 4, Graphics.FONT_TINY, dest,
+            Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
         drawLine(dc, 3 * h / 4, Graphics.FONT_SMALL, line);
     }
 

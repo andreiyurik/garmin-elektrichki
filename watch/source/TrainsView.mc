@@ -4,7 +4,7 @@ import Toybox.Timer;
 import Toybox.WatchUi;
 
 //! Main widget view: route header and the next departures.
-//!   08:42   7 мин  → 09:05
+//!   08:42      7 мин   (or "▸ 09:05" arrival when the wait is an hour+)
 //! Light-on-dark, system fonts, numbers first (UX guidelines for MIP).
 class TrainsView extends WatchUi.View {
     private const ROWS = 4;
@@ -56,7 +56,8 @@ class TrainsView extends WatchUi.View {
         var toWork = Departures.towardWork(_flipped);
         var titles = Departures.titles(toWork);
         drawCentered(dc, cx, h * 15 / 100, Graphics.FONT_XTINY, titles[0], Graphics.COLOR_LT_GRAY);
-        drawCentered(dc, cx, h * 24 / 100, Graphics.FONT_TINY, "→ " + titles[1], Graphics.COLOR_WHITE);
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        Draw.arrowTextCentered(dc, cx, h * 24 / 100, Graphics.FONT_TINY, titles[1]);
 
         var trains = Departures.upcoming(toWork, ROWS);
         if (trains == null || trains.size() == 0) {
@@ -90,10 +91,13 @@ class TrainsView extends WatchUi.View {
                 Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
 
             var wait = dep - now;
-            var mid = wait < 60 ? wait + " " + minLabel : "→ " + Departures.hhmm(dep + trains[i][1]);
             dc.setColor(wait <= 5 ? Graphics.COLOR_ORANGE : Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(w * 84 / 100, y, Graphics.FONT_XTINY, mid,
-                Graphics.TEXT_JUSTIFY_RIGHT | Graphics.TEXT_JUSTIFY_VCENTER);
+            if (wait < 60) {
+                dc.drawText(w * 84 / 100, y, Graphics.FONT_XTINY, wait + " " + minLabel,
+                    Graphics.TEXT_JUSTIFY_RIGHT | Graphics.TEXT_JUSTIFY_VCENTER);
+            } else {
+                Draw.arrowTextRight(dc, w * 84 / 100, y, Graphics.FONT_XTINY, Departures.hhmm(dep + trains[i][1]));
+            }
 
             if (trains[i][2] != 0) {
                 dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
