@@ -1,0 +1,10 @@
+# Connect IQ build output and keys
+bin/
+*.prg
+*.iq
+*.der
+*.pem
+# Proxy
+proxy/node_modules/
+proxy/.wrangler/
+proxy/.dev.vars

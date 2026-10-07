@@ -1,0 +1,9 @@
+<resources xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://developer.garmin.com/downloads/connect-iq/resources.xsd">
+    <properties>
+        <property id="HomeStation" type="string"></property>
+        <property id="WorkStation" type="string"></property>
+        <property id="SwitchHour" type="number">13</property>
+        <!-- Not a user setting: base URL of the proxy in /proxy -->
+        <property id="ProxyUrl" type="string">https://elektrichki-proxy.workers.dev</property>
+    </properties>
+</resources>
