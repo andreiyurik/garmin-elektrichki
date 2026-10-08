@@ -1,8 +1,8 @@
-import assert from "node:assert/strict";
-import { test } from "node:test";
-import { compactSegments, FLAG_EXPRESS, toMinutes } from "../src/compact.js";
-import { normalize, resolveStation } from "../src/stations.js";
-import { searchAll } from "../src/yandex.js";
+const assert = require("node:assert/strict");
+const { test } = require("node:test");
+const { compactSegments, FLAG_EXPRESS, toMinutes } = require("../src/compact.js");
+const { normalize, resolveStation } = require("../src/stations.js");
+const { searchAll } = require("../src/yandex.js");
 
 const seg = (dep, arr, durMin, express_type = null, extra = {}) => ({
   departure: `2026-10-07T${dep}:00+03:00`,
@@ -64,4 +64,32 @@ test("searchAll follows pagination", async () => {
   const all = await searchAll("k", "s1", "s2", "2026-10-07", fakeFetch);
   assert.equal(all.length, 130);
   assert.deepEqual(calls, [0, 100]);
+});
+
+const { handleRequest } = require("../src/index.js");
+
+test("handleRequest validates input and caches by resolved codes", async () => {
+  const now = Date.parse("2026-10-07T09:00:00+03:00");
+  let calls = 0;
+  const fakeFetch = async (url) => {
+    calls++;
+    const from = url.searchParams.get("from");
+    return Response.json({
+      pagination: { total: 1 },
+      segments: [seg(from === "s9600721" ? "08:42" : "18:10", "09:05", 23)],
+    });
+  };
+  const ctx = { apiKey: "k", fetchImpl: fakeFetch, now };
+
+  assert.equal((await handleRequest({ a: "x", b: "y", date: "bad" }, ctx)).statusCode, 400);
+  assert.equal((await handleRequest({ a: "Нет", b: "Беговая", date: "2026-10-07" }, ctx)).statusCode, 404);
+
+  // stations.json is empty in the repo, so pass codes directly.
+  const res = await handleRequest({ a: "s9600721", b: "s9601666", date: "2026-10-07" }, ctx);
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(JSON.parse(res.body).ab, [522, 23, 0]);
+  assert.deepEqual(JSON.parse(res.body).ba, [1090, 23, 0]);
+
+  await handleRequest({ a: "s9600721", b: "s9601666", date: "2026-10-07" }, ctx);
+  assert.equal(calls, 2, "second call is served from cache");
 });

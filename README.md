@@ -9,7 +9,7 @@
 ## Как это работает
 
 ```
-[часы] ←BLE→ [Garmin Connect на телефоне] → [proxy: Cloudflare Worker] → [API Яндекс.Расписаний]
+[часы] ←BLE→ [Garmin Connect на телефоне] → [proxy: Yandex Cloud Function] → [API Яндекс.Расписаний]
 ```
 
 - **Часы** (`watch/`, Monkey C) хранят расписание на 3 дня в `Application.Storage`.
@@ -18,7 +18,7 @@
 - **Прокси** (`proxy/`) находит станции по названию, забирает у Яндекса оба
   направления за день и отдаёт компактный JSON (~2–4 КБ):
   `{"a":"Одинцово","b":"Беговая","ab":[мин_отпр, длит_мин, флаги, …],"ba":[…]}`.
-  Ответы кэшируются на 6 часов.
+  Ответы кэшируются на 6 часов в памяти тёплого экземпляра функции.
 
 ## Использование
 
@@ -41,20 +41,22 @@ monkeyc -f watch/monkey.jungle -d fenix6 -o bin/app.prg -y ~/.Garmin/ConnectIQ/k
 connectiq && monkeydo bin/app.prg fenix6
 ```
 
-URL прокси задаётся свойством `ProxyUrl` в `watch/resources/settings/properties.xml`.
+URL функции задаётся свойством `ProxyUrl` в `watch/resources/settings/properties.xml`.
 
-### Прокси
+### Прокси (Yandex Cloud Functions, nodejs22)
 
 ```sh
 cd proxy
-npm install
 npm test
 YANDEX_API_KEY=… npm run stations   # пересобрать src/stations.json
-npx wrangler secret put YANDEX_API_KEY
-npm run deploy
+yc init                             # один раз
+npm run deploy                      # создаёт публичную функцию и печатает её URL
 ```
 
 Ключ API: https://developer.tech.yandex.ru → «API Яндекс.Расписаний».
+Скрипт берёт его из `~/.config/mcd-garmin/yandex_key` и передаёт в переменную
+окружения функции. Бесплатный уровень Cloud Functions — 1 млн вызовов и
+10 ГБ×час в месяц.
 
 ## Основа
 

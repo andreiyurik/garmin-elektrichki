@@ -3,7 +3,7 @@
 const BASE = "https://api.rasp.yandex-net.ru/v3.0";
 const PAGE = 100; // documented maximum for `limit`
 
-export class UpstreamError extends Error {
+class UpstreamError extends Error {
   constructor(status, body) {
     super(`Yandex API ${status}: ${body.slice(0, 300)}`);
     this.status = status;
@@ -11,7 +11,7 @@ export class UpstreamError extends Error {
 }
 
 // All suburban segments between two stations on a date, following pagination.
-export async function searchAll(apiKey, from, to, date, fetchImpl = fetch) {
+async function searchAll(apiKey, from, to, date, fetchImpl = fetch) {
   const segments = [];
   for (let offset = 0; ; offset += PAGE) {
     const url = new URL(`${BASE}/search/`);
@@ -35,3 +35,5 @@ export async function searchAll(apiKey, from, to, date, fetchImpl = fetch) {
     if (offset + PAGE >= total) return segments;
   }
 }
+
+module.exports = { UpstreamError, searchAll };

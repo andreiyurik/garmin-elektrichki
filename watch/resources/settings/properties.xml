@@ -3,7 +3,7 @@
         <property id="HomeStation" type="string"></property>
         <property id="WorkStation" type="string"></property>
         <property id="SwitchHour" type="number">13</property>
-        <!-- Not a user setting: base URL of the proxy in /proxy -->
-        <property id="ProxyUrl" type="string">https://elektrichki-proxy.workers.dev</property>
+        <!-- Not a user setting: URL of the Yandex Cloud Function in /proxy (set after deploy) -->
+        <property id="ProxyUrl" type="string">https://functions.yandexcloud.net/FUNCTION_ID</property>
     </properties>
 </resources>

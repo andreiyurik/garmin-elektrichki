@@ -16,7 +16,7 @@ class Fetcher {
     public function fetch(date as String) as Void {
         _date = date;
         Communications.makeWebRequest(
-            Schedule.proxyUrl() + "/v1/day",
+            Schedule.proxyUrl(),
             { "a" => Schedule.home(), "b" => Schedule.work(), "date" => date },
             {
                 :method => Communications.HTTP_REQUEST_METHOD_GET,
