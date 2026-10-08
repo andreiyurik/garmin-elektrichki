@@ -71,7 +71,12 @@ class TrainsView extends WatchUi.View {
         Draw.arrowTextCentered(dc, cx, h * 22 / 100, Graphics.FONT_TINY, titles[1]);
 
         var trains = Departures.upcoming(toWork, ROWS);
-        if (trains == null || trains.size() == 0) {
+        var err = Departures.error();
+        if (trains == null && err != null) {
+            // Nothing to show: the reason gets the middle of the screen.
+            drawCentered(dc, cx, h * 45 / 100, Graphics.FONT_TINY, err[0], Graphics.COLOR_ORANGE);
+            drawCentered(dc, cx, h * 57 / 100, Graphics.FONT_SMALL, err[1], Graphics.COLOR_WHITE);
+        } else if (trains == null || trains.size() == 0) {
             var msg = trains == null ? $.Rez.Strings.NoData : $.Rez.Strings.NoTrains;
             drawCentered(dc, cx, h / 2, Graphics.FONT_SMALL,
                 WatchUi.loadResource(msg) as String, Graphics.COLOR_WHITE);
@@ -79,7 +84,9 @@ class TrainsView extends WatchUi.View {
             drawTrains(dc, w, h, trains);
         }
 
-        drawCentered(dc, cx, h * 89 / 100, Graphics.FONT_XTINY, footer(), Graphics.COLOR_LT_GRAY);
+        if (trains != null || err == null || _status.length() > 0) {
+            drawCentered(dc, cx, h * 87 / 100, Graphics.FONT_XTINY, footer(err), Graphics.COLOR_LT_GRAY);
+        }
     }
 
     private function drawTrains(dc as Dc, w as Number, h as Number, trains as Array<Array>) as Void {
@@ -149,15 +156,15 @@ class TrainsView extends WatchUi.View {
         dc.drawText(x, y, font, text, Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
     }
 
-    //! Status of a running refresh, else the last error, else what the
-    //! minutes mean and when the schedule was fetched.
-    private function footer() as String {
+    //! Status of a running refresh, else the last error's title (the screen is
+    //! narrow at the bottom), else what the minutes mean and when the schedule
+    //! was fetched.
+    private function footer(err as [String, String]?) as String {
         if (_status.length() > 0) {
             return _status;
         }
-        var err = Departures.errorText();
         if (err != null) {
-            return err;
+            return err[0];
         }
         var label = Schedule.walkMinutes() > 0 ? $.Rez.Strings.UntilLeave : $.Rez.Strings.Scheduled;
         var text = WatchUi.loadResource(label) as String;

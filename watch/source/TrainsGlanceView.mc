@@ -34,8 +34,8 @@ class TrainsGlanceView extends WatchUi.GlanceView {
     private function secondLine(toWork as Boolean) as String {
         var trains = Departures.upcoming(toWork, 6);
         if (trains == null) {
-            var err = Departures.errorText();
-            return err != null ? err : WatchUi.loadResource($.Rez.Strings.NoData) as String;
+            var err = Departures.error();
+            return err != null ? err[0] + " " + err[1] : WatchUi.loadResource($.Rez.Strings.NoData) as String;
         }
         var i = Departures.firstCatchable(trains);
         if (i < 0) {

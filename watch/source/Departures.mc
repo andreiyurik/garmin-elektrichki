@@ -89,19 +89,20 @@ module Departures {
         return -1;
     }
 
-    //! A short explanation of the last failed fetch, or null.
-    function errorText() as String? {
+    //! The last failed fetch as [title, detail], or null.
+    //! ["Станция не найдена:", "Одинцвоо"] or ["Нет связи с телефоном", "-104"].
+    function error() as [String, String]? {
         var err = Schedule.lastError();
         if (err == null) {
             return null;
         }
         var query = err["q"];
         if (query instanceof String) {
-            return WatchUi.loadResource($.Rez.Strings.NotFound) + " " + query;
+            return [WatchUi.loadResource($.Rez.Strings.NotFound) as String, query];
         }
         var code = err["c"] as Number;
-        var text = code < 0 ? $.Rez.Strings.NoPhone : $.Rez.Strings.ServerError;
-        return WatchUi.loadResource(text) + " (" + code + ")";
+        var title = code < 0 ? $.Rez.Strings.NoPhone : $.Rez.Strings.ServerError;
+        return [WatchUi.loadResource(title) as String, code.toString()];
     }
 
     function hhmm(minute as Number) as String {

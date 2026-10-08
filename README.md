@@ -48,6 +48,13 @@ monkeyc -f watch/monkey.jungle -d fenix6 -o bin/app.prg -y ~/.Garmin/ConnectIQ/k
 connectiq && monkeydo bin/app.prg fenix6
 ```
 
+Юнит-тесты (Run No Evil, запускаются в симуляторе):
+
+```sh
+monkeyc -f watch/monkey.jungle -d fenix6 -o bin/test.prg -y ~/.Garmin/ConnectIQ/keys/developer_key.der --unit-test
+monkeydo bin/test.prg fenix6 -t
+```
+
 URL функции задаётся свойством `ProxyUrl` в `watch/resources/settings/properties.xml`.
 
 ### Прокси (Yandex Cloud Functions, nodejs22)
