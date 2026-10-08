@@ -97,6 +97,7 @@ class TrainsView extends WatchUi.View {
         var y = h * 35 / 100;
         var line = h * 10 / 100;
         var minLabel = WatchUi.loadResource($.Rez.Strings.Min) as String;
+        var hourLabel = WatchUi.loadResource($.Rez.Strings.Hour) as String;
         var walk = Schedule.walkMinutes();
         var featured = Departures.firstCatchable(trains, now, walk);
 
@@ -120,7 +121,8 @@ class TrainsView extends WatchUi.View {
                     Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
             }
 
-            var minutes = missed ? WatchUi.loadResource($.Rez.Strings.Missed) as String : leave + " " + minLabel;
+            var minutes = missed ? WatchUi.loadResource($.Rez.Strings.Missed) as String
+                : Departures.duration(leave, hourLabel, minLabel);
             var minColor = missed ? Graphics.COLOR_DK_GRAY
                 : (leave <= HURRY_MINUTES ? Graphics.COLOR_ORANGE : Graphics.COLOR_WHITE);
             dc.setColor(minColor, Graphics.COLOR_TRANSPARENT);

@@ -19,16 +19,20 @@ function resetState() as Void {
     Properties.setValue("HideExpress", false);
 }
 
-//! A valid proxy response (format v2): two trains each way.
-//! Stride 5: [dep, dur, flags, terminal, platform]; strings indexed from "s".
+//! Same layout as proxy compact.js packTrain().
+function packTrain(departure as Number, flags as Number, terminal as Number, platform as Number) as Number {
+    return departure | (flags << 11) | (terminal << 13) | (platform << 21);
+}
+
+//! A valid proxy response (format v3): two trains each way.
 function sampleDay() as Dictionary {
     return {
-        "v" => 2,
+        "v" => 3,
         "date" => "2026-10-07",
         "a" => "Одинцово",
         "b" => "Беговая",
-        "ab" => [522, 23, 0, 1, 3, 531, 17, Schedule.FLAG_EXPRESS, 2, 3],
-        "ba" => [1090, 24, 0, 2, 0, 1101, 24, 0, 2, 4],
+        "ab" => [packTrain(522, 0, 1, 3), packTrain(531, Schedule.FLAG_EXPRESS, 2, 3)],
+        "ba" => [packTrain(1090, 0, 2, 0), packTrain(1101, 0, 2, 4)],
         "s" => ["", "Лобня", "Беговая", "2", "9 тупик"]
     };
 }
@@ -37,9 +41,9 @@ function sampleDay() as Dictionary {
 function dayWithTrains(minutes as Array<Number>) as Dictionary {
     var trains = [] as Array<Number>;
     for (var i = 0; i < minutes.size(); i++) {
-        trains.addAll([minutes[i], 20, 0, 0, 0]);
+        trains.add(packTrain(minutes[i], 0, 0, 0));
     }
-    return { "v" => 2, "a" => "A", "b" => "B", "ab" => trains, "ba" => trains, "s" => [""] };
+    return { "v" => 3, "a" => "A", "b" => "B", "ab" => trains, "ba" => trains, "s" => [""] };
 }
 
 function check(logger as Logger, ok as Boolean, what as String) as Boolean {

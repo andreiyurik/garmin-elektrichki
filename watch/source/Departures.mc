@@ -9,7 +9,6 @@ module Departures {
     // Train fields returned by upcoming().
     enum {
         DEP,
-        DUR,
         FLAGS,
         TERMINAL,
         PLATFORM
@@ -39,8 +38,7 @@ module Departures {
     }
 
     //! Up to `count` trains departing at or after `now` (minutes since
-    //! midnight), as
-    //! [departureMinute, durationMinutes, flags, terminal, platform].
+    //! midnight), as [departureMinute, flags, terminal, platform].
     //! departureMinute counts from today's midnight; tomorrow's trains get
     //! +1440 so the list continues past the last train of the day.
     //! Returns null when no schedule is cached for today.
@@ -66,11 +64,12 @@ module Departures {
         var trains = day[toWork ? "ab" : "ba"] as Array<Number>;
         var strings = day["s"] as Array<String>;
         var hideExpress = Schedule.hideExpress();
-        var stride = Schedule.STRIDE;
-        for (var i = 0; i + stride - 1 < trains.size() && out.size() < count; i += stride) {
-            if (trains[i] >= fromMinute && !(hideExpress && trains[i + 2] != 0)) {
-                out.add([trains[i] + shift, trains[i + 1], trains[i + 2],
-                         strings[trains[i + 3]], strings[trains[i + 4]]]);
+        for (var i = 0; i < trains.size() && out.size() < count; i++) {
+            var train = trains[i];
+            var flags = Schedule.flagsOf(train);
+            if (Schedule.departureOf(train) >= fromMinute && !(hideExpress && flags != 0)) {
+                out.add([Schedule.departureOf(train) + shift, flags,
+                         strings[Schedule.terminalOf(train)], strings[Schedule.platformOf(train)]]);
             }
         }
     }
@@ -106,6 +105,15 @@ module Departures {
             title = $.Rez.Strings.NotFound;
         }
         return [WatchUi.loadResource(title) as String, err["d"] as String];
+    }
+
+    //! "7 мин", "1 ч", "3 ч 28 мин": a long wait reads faster in hours.
+    function duration(minutes as Number, hourLabel as String, minLabel as String) as String {
+        if (minutes < 60) {
+            return minutes + " " + minLabel;
+        }
+        var text = minutes / 60 + " " + hourLabel;
+        return minutes % 60 == 0 ? text : text + " " + minutes % 60 + " " + minLabel;
     }
 
     function hhmm(minute as Number) as String {

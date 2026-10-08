@@ -23,22 +23,22 @@ function testIsValidAcceptsProxyResponse(logger as Logger) as Boolean {
 (:test)
 function testIsValidRejectsBrokenResponses(logger as Logger) as Boolean {
     var wrongVersion = sampleDay();
-    wrongVersion["v"] = 1;
+    wrongVersion["v"] = 2;
     var noStrings = sampleDay();
     noStrings.remove("s");
-    var badStride = sampleDay();
-    badStride["ab"] = [522, 23, 0, 1];
+    var badMinute = sampleDay();
+    badMinute["ab"] = [packTrain(1440, 0, 0, 0)];
     var badIndex = sampleDay();
-    badIndex["ba"] = [1090, 24, 0, 99, 0];
+    badIndex["ba"] = [packTrain(1090, 0, 99, 0)];
     var negative = sampleDay();
-    negative["ab"] = [-1, 23, 0, 0, 0];
+    negative["ab"] = [-1];
     var notNumber = sampleDay();
-    notNumber["ab"] = ["08:42", 23, 0, 0, 0];
+    notNumber["ab"] = ["08:42"];
     var noTitle = sampleDay();
     noTitle.remove("a");
     return check(logger, !Schedule.isValid(wrongVersion), "old format")
         && check(logger, !Schedule.isValid(noStrings), "missing string table")
-        && check(logger, !Schedule.isValid(badStride), "length not a multiple of 5")
+        && check(logger, !Schedule.isValid(badMinute), "departure past midnight")
         && check(logger, !Schedule.isValid(badIndex), "string index out of range")
         && check(logger, !Schedule.isValid(negative), "negative minute")
         && check(logger, !Schedule.isValid(notNumber), "string in train array")
@@ -57,7 +57,7 @@ function testSaveLoadIsTiedToRouteAndFormat(logger as Logger) as Boolean {
 
     Properties.setValue("WorkStation", "Беговая");
     var old = sampleDay();
-    old["v"] = 1;
+    old["v"] = 2;
     old["r"] = Schedule.routeKey();
     Storage.setValue("d:" + date, old as Dictionary<Storage.KeyType, Storage.ValueType>);
     var oldFormat = check(logger, Schedule.load(date) == null, "old format ignored");

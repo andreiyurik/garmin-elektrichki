@@ -1,6 +1,6 @@
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
-const { compactDay, FLAG_EXPRESS, terminalOf, toMinutes } = require("../src/compact.js");
+const { compactDay, FLAG_EXPRESS, packTrain, terminalOf, toMinutes } = require("../src/compact.js");
 const { normalize, resolveStation } = require("../src/stations.js");
 const { searchAll } = require("../src/yandex.js");
 
@@ -26,6 +26,15 @@ test("terminalOf takes the last part of the thread title", () => {
   assert.equal(terminalOf(undefined), "");
 });
 
+test("packTrain keeps every field in its own bits", () => {
+  const x = packTrain(1439, 2, 255, 255);
+  assert.equal(x & 0x7ff, 1439);
+  assert.equal((x >> 11) & 3, 2);
+  assert.equal((x >> 13) & 0xff, 255);
+  assert.equal((x >> 21) & 0xff, 255);
+  assert.ok(x < 2 ** 31, "fits a signed 32-bit Monkey C Number");
+});
+
 test("compactDay sorts, flags express, drops transfers, shares a string table", () => {
   const day = compactDay(
     [
@@ -37,8 +46,8 @@ test("compactDay sorts, flags express, drops transfers, shares a string table", 
   );
   // Strings are numbered in input order; rows are then sorted by time.
   assert.deepEqual(day.s, ["", "Лобня", "2", "Беговая", "Одинцово"]);
-  assert.deepEqual(day.ab, [531, 17, FLAG_EXPRESS, 3, 2, 543, 23, 0, 1, 2]);
-  assert.deepEqual(day.ba, [1090, 23, 0, 4, 0]);
+  assert.deepEqual(day.ab, [packTrain(531, FLAG_EXPRESS, 3, 2), packTrain(543, 0, 1, 2)]);
+  assert.deepEqual(day.ba, [packTrain(1090, 0, 4, 0)]);
 });
 
 const STATIONS = [
@@ -103,9 +112,9 @@ test("handleRequest validates input and caches by resolved codes", async () => {
   const res = await handleRequest({ a: "s9600721", b: "s9601666", date: "2026-10-07" }, ctx);
   assert.equal(res.statusCode, 200);
   const body = JSON.parse(res.body);
-  assert.equal(body.v, 2);
-  assert.deepEqual(body.ab, [522, 23, 0, 0, 0]);
-  assert.deepEqual(body.ba, [1090, 23, 0, 0, 0]);
+  assert.equal(body.v, 3);
+  assert.deepEqual(body.ab, [522]);
+  assert.deepEqual(body.ba, [1090]);
   assert.deepEqual(body.s, [""]);
 
   await handleRequest({ a: "s9600721", b: "s9601666", date: "2026-10-07" }, ctx);

@@ -10,6 +10,7 @@
     <string id="WalkPrompt">Приложение подскажет, когда выходить. 0 — показывать минуты до отправления</string>
     <string id="WalkError">Введите минуты от 0 до 60</string>
     <string id="HideExpressTitle">Скрывать экспрессы</string>
+    <string id="Hour" scope="glance">ч</string>
     <string id="Min" scope="glance">мин</string>
     <string id="NoData" scope="glance">Расписание не загружено</string>
     <string id="NoStations" scope="glance">Укажите станции в Garmin Connect</string>

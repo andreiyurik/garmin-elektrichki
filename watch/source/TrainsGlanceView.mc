@@ -5,6 +5,7 @@ import Toybox.WatchUi;
 //! Glance (API 3.1.0): destination and the next train the user can catch.
 //!   ▸ Беговая
 //!   08:42 · выход 4 мин
+//! Uses the system glance font (FONT_GLANCE, API 3.1.8) like built-in glances.
 //! On fenix 6 the glance is redrawn by the system, not live (Glances docs),
 //! so it only reads Storage and draws.
 (:glance)
@@ -19,17 +20,17 @@ class TrainsGlanceView extends WatchUi.GlanceView {
         var h = dc.getHeight();
 
         if (!Schedule.isConfigured()) {
-            drawLine(dc, h / 2, Graphics.FONT_TINY, WatchUi.loadResource($.Rez.Strings.NoStations) as String);
+            drawLine(dc, h / 2, Graphics.FONT_GLANCE, WatchUi.loadResource($.Rez.Strings.NoStations) as String);
             return;
         }
 
         var now = Departures.nowMinutes();
         var toWork = Departures.towardWork(false, now);
-        var size = dc.getFontHeight(Graphics.FONT_TINY) / 3;
+        var size = dc.getFontHeight(Graphics.FONT_GLANCE) / 3;
         Draw.arrow(dc, 0, h / 4, size);
-        dc.drawText(size + size / 2 + 2, h / 4, Graphics.FONT_TINY, Departures.titles(toWork)[1],
+        dc.drawText(size + size / 2 + 2, h / 4, Graphics.FONT_GLANCE, Departures.titles(toWork)[1],
             Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
-        drawLine(dc, 3 * h / 4, Graphics.FONT_SMALL, secondLine(toWork, now));
+        drawLine(dc, 3 * h / 4, Graphics.FONT_GLANCE, secondLine(toWork, now));
     }
 
     private function secondLine(toWork as Boolean, now as Number) as String {
@@ -44,7 +45,8 @@ class TrainsGlanceView extends WatchUi.GlanceView {
             return WatchUi.loadResource($.Rez.Strings.NoTrains) as String;
         }
         var dep = trains[i][Departures.DEP] as Number;
-        var mins = Departures.leaveIn(dep, now, walk) + " " + WatchUi.loadResource($.Rez.Strings.Min);
+        var mins = Departures.duration(Departures.leaveIn(dep, now, walk),
+            WatchUi.loadResource($.Rez.Strings.Hour) as String, WatchUi.loadResource($.Rez.Strings.Min) as String);
         if (walk > 0) {
             mins = WatchUi.loadResource($.Rez.Strings.LeaveIn) + " " + mins;
         }

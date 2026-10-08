@@ -12,6 +12,23 @@ function testHhmm(logger as Logger) as Boolean {
 }
 
 (:test)
+function testUnpackReadsEveryField(logger as Logger) as Boolean {
+    var train = packTrain(1439, Schedule.FLAG_EXPRESS, 255, 7);
+    return check(logger, Schedule.departureOf(train) == 1439, "departure")
+        && check(logger, Schedule.flagsOf(train) == Schedule.FLAG_EXPRESS, "flags")
+        && check(logger, Schedule.terminalOf(train) == 255, "terminal")
+        && check(logger, Schedule.platformOf(train) == 7, "platform");
+}
+
+(:test)
+function testDurationUsesHoursForLongWaits(logger as Logger) as Boolean {
+    return check(logger, Departures.duration(7, "ч", "мин").equals("7 мин"), "under an hour")
+        && check(logger, Departures.duration(0, "ч", "мин").equals("0 мин"), "now")
+        && check(logger, Departures.duration(60, "ч", "мин").equals("1 ч"), "whole hour")
+        && check(logger, Departures.duration(208, "ч", "мин").equals("3 ч 28 мин"), "hours and minutes");
+}
+
+(:test)
 function testTowardWorkSwitchesAtSwitchHour(logger as Logger) as Boolean {
     resetState();
     return check(logger, Departures.towardWork(false, 12 * 60 + 59), "12:59 is morning")
@@ -22,7 +39,7 @@ function testTowardWorkSwitchesAtSwitchHour(logger as Logger) as Boolean {
 
 (:test)
 function testLeaveInAndFirstCatchable(logger as Logger) as Boolean {
-    var trains = [[595, 20, 0, "", ""], [605, 20, 0, "", ""], [620, 20, 0, "", ""]] as Array<Array>;
+    var trains = [[595, 0, "", ""], [605, 0, "", ""], [620, 0, "", ""]] as Array<Array>;
     return check(logger, Departures.leaveIn(600, 590, 5) == 5, "600 - 5 walk - 590")
         && check(logger, Departures.leaveIn(595, 590, 10) == -5, "missed is negative")
         && check(logger, Departures.firstCatchable(trains, 590, 10) == 1, "skips the missed 09:55")

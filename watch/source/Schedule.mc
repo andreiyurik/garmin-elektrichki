@@ -7,9 +7,11 @@ import Toybox.Time.Gregorian;
 
 //! Settings and the on-device schedule cache.
 //!
-//! One Storage entry per day ("d:YYYY-MM-DD"), as returned by the proxy (v2):
-//!   {"a": title, "b": title, "ab": [dep, dur, flags, terminal, platform, ...],
-//!    "ba": [...], "s": [strings], "r": routeKey, "t": fetchedAtEpochSeconds}
+//! One Storage entry per day ("d:YYYY-MM-DD"), as returned by the proxy (v3):
+//!   {"a": title, "b": title, "ab": [packedTrain, ...], "ba": [...],
+//!    "s": [strings], "r": routeKey, "t": fetchedAtEpochSeconds}
+//! A packed train is one Number (layout in Departures and proxy compact.js),
+//! which keeps a dense MCD day small enough for the 32 KB glance.
 //! The last failed fetch is kept in "err" as {"k": kind, "d": detail, "r": routeKey}
 //! so the views can explain it.
 //! Storage limits (Persisting Data docs): 8 KB per value, 128 KB total;
@@ -18,8 +20,7 @@ import Toybox.Time.Gregorian;
 module Schedule {
     const DAYS_AHEAD = 3;
     const STALE_SECONDS = 12 * 60 * 60;
-    const STRIDE = 5;
-    const FORMAT = 2;
+    const FORMAT = 3;
     // Flags only mark express kinds (proxy compact.js): 0 = regular train.
     const FLAG_EXPRESS = 1;
 
@@ -28,6 +29,24 @@ module Schedule {
         ERROR_PHONE = 1,   // no phone / Bluetooth / timeout: try again later
         ERROR_SERVER = 2,  // the proxy answered with an error or bad data
         ERROR_STATION = 3  // a station name was not found; detail = the name
+    }
+
+    // A stored train is one Number (see proxy compact.js):
+    // bits 0-10 departure minute, 11-12 flags, 13-20 terminal, 21-28 platform.
+    function departureOf(train as Number) as Number {
+        return train & 0x7FF;
+    }
+
+    function flagsOf(train as Number) as Number {
+        return (train >> 11) & 0x3;
+    }
+
+    function terminalOf(train as Number) as Number {
+        return (train >> 13) & 0xFF;
+    }
+
+    function platformOf(train as Number) as Number {
+        return (train >> 21) & 0xFF;
     }
 
     function home() as String {
@@ -109,16 +128,15 @@ module Schedule {
     }
 
     function isValidTrains(trains as Object?, stringCount as Number) as Boolean {
-        if (!(trains instanceof Array) || trains.size() % STRIDE != 0) {
+        if (!(trains instanceof Array)) {
             return false;
         }
         for (var i = 0; i < trains.size(); i++) {
-            var value = trains[i];
-            if (!(value instanceof Number) || value < 0) {
-                return false;
-            }
-            var field = i % STRIDE;
-            if (field >= 3 && value >= stringCount) {
+            var train = trains[i];
+            if (!(train instanceof Number) || train < 0
+                || departureOf(train) >= 24 * 60
+                || terminalOf(train) >= stringCount
+                || platformOf(train) >= stringCount) {
                 return false;
             }
         }

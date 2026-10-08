@@ -10,6 +10,7 @@
     <string id="WalkPrompt">The app tells you when to leave. 0 shows minutes to departure</string>
     <string id="WalkError">Enter minutes from 0 to 60</string>
     <string id="HideExpressTitle">Hide express trains</string>
+    <string id="Hour" scope="glance">h</string>
     <string id="Min" scope="glance">min</string>
     <string id="NoData" scope="glance">No schedule yet</string>
     <string id="NoStations" scope="glance">Set stations in Garmin Connect</string>
