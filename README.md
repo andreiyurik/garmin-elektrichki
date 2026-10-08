@@ -48,12 +48,16 @@ monkeyc -f watch/monkey.jungle -d fenix6 -o bin/app.prg -y ~/.Garmin/ConnectIQ/k
 connectiq && monkeydo bin/app.prg fenix6
 ```
 
-Юнит-тесты (Run No Evil, запускаются в симуляторе):
+### Проверки
 
 ```sh
-monkeyc -f watch/monkey.jungle -d fenix6 -o bin/test.prg -y ~/.Garmin/ConnectIQ/keys/developer_key.der --unit-test
-monkeydo bin/test.prg fenix6 -t
+./test.sh          # тесты прокси, строгая сборка под все устройства, юнит-тесты в симуляторе
+./test.sh proxy    # только прокси (это же запускает GitHub Actions)
 ```
+
+Юнит-тесты часов используют Run No Evil из Connect IQ SDK и выполняются в
+симуляторе; логика получает текущее время параметром, а `Fetcher.handle`
+проверяет обработку ответов без сети.
 
 URL функции задаётся свойством `ProxyUrl` в `watch/resources/settings/properties.xml`.
 

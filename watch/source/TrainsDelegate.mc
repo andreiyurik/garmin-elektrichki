@@ -1,4 +1,5 @@
 import Toybox.Lang;
+import Toybox.Time;
 import Toybox.WatchUi;
 
 //! START flips the direction, MENU opens the native Menu2.
@@ -33,7 +34,7 @@ class TrainsDelegate extends WatchUi.BehaviorDelegate {
         if (!Schedule.isConfigured()) {
             return;
         }
-        var date = force ? Schedule.dateString(0) : Schedule.nextDateToFetch();
+        var date = force ? Schedule.dateString(0) : Schedule.nextDateToFetch(Time.now().value());
         if (date == null) {
             return;
         }

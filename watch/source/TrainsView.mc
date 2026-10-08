@@ -64,13 +64,15 @@ class TrainsView extends WatchUi.View {
             return;
         }
 
-        var toWork = Departures.towardWork(_flipped);
+        // One clock reading per frame keeps every row consistent.
+        var now = Departures.nowMinutes();
+        var toWork = Departures.towardWork(_flipped, now);
         var titles = Departures.titles(toWork);
         drawCentered(dc, cx, h * 13 / 100, Graphics.FONT_XTINY, titles[0], Graphics.COLOR_LT_GRAY);
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
         Draw.arrowTextCentered(dc, cx, h * 22 / 100, Graphics.FONT_TINY, titles[1]);
 
-        var trains = Departures.upcoming(toWork, ROWS);
+        var trains = Departures.upcoming(toWork, ROWS, now);
         var err = Departures.error();
         if (trains == null && err != null) {
             // Nothing to show: the reason gets the middle of the screen.
@@ -81,7 +83,7 @@ class TrainsView extends WatchUi.View {
             drawCentered(dc, cx, h / 2, Graphics.FONT_SMALL,
                 WatchUi.loadResource(msg) as String, Graphics.COLOR_WHITE);
         } else {
-            drawTrains(dc, w, h, trains);
+            drawTrains(dc, w, h, trains, now);
         }
 
         if (trains != null || err == null || _status.length() > 0) {
@@ -89,18 +91,19 @@ class TrainsView extends WatchUi.View {
         }
     }
 
-    private function drawTrains(dc as Dc, w as Number, h as Number, trains as Array<Array>) as Void {
+    private function drawTrains(dc as Dc, w as Number, h as Number, trains as Array<Array>, now as Number) as Void {
         var left = w * 18 / 100;
         var right = w * 82 / 100;
         var y = h * 35 / 100;
         var line = h * 10 / 100;
         var minLabel = WatchUi.loadResource($.Rez.Strings.Min) as String;
-        var featured = Departures.firstCatchable(trains);
+        var walk = Schedule.walkMinutes();
+        var featured = Departures.firstCatchable(trains, now, walk);
 
         for (var i = 0; i < trains.size(); i++) {
             var train = trains[i];
             var dep = train[Departures.DEP] as Number;
-            var leave = Departures.leaveIn(dep);
+            var leave = Departures.leaveIn(dep, now, walk);
             var missed = leave < 0;
             var big = i == featured;
             var font = big ? Graphics.FONT_MEDIUM : Graphics.FONT_SMALL;

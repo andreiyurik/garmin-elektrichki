@@ -1,6 +1,7 @@
 import Toybox.Background;
 import Toybox.Lang;
 import Toybox.System;
+import Toybox.Time;
 
 //! Hourly temporal event: fills missing or stale days, one request at a time.
 //! Each day is saved as soon as it arrives, so if the system stops the
@@ -31,7 +32,7 @@ class BackgroundService extends System.ServiceDelegate {
     }
 
     private function fetchNext() as Void {
-        var date = Schedule.nextDateToFetch();
+        var date = Schedule.nextDateToFetch(Time.now().value());
         // Bounded so a response that is never saved cannot loop forever.
         _requests++;
         if (date == null || _requests > Schedule.DAYS_AHEAD) {

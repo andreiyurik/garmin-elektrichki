@@ -23,27 +23,29 @@ class TrainsGlanceView extends WatchUi.GlanceView {
             return;
         }
 
-        var toWork = Departures.towardWork(false);
+        var now = Departures.nowMinutes();
+        var toWork = Departures.towardWork(false, now);
         var size = dc.getFontHeight(Graphics.FONT_TINY) / 3;
         Draw.arrow(dc, 0, h / 4, size);
         dc.drawText(size + size / 2 + 2, h / 4, Graphics.FONT_TINY, Departures.titles(toWork)[1],
             Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
-        drawLine(dc, 3 * h / 4, Graphics.FONT_SMALL, secondLine(toWork));
+        drawLine(dc, 3 * h / 4, Graphics.FONT_SMALL, secondLine(toWork, now));
     }
 
-    private function secondLine(toWork as Boolean) as String {
-        var trains = Departures.upcoming(toWork, 6);
+    private function secondLine(toWork as Boolean, now as Number) as String {
+        var trains = Departures.upcoming(toWork, 6, now);
         if (trains == null) {
             var err = Departures.error();
             return err != null ? err[0] + " " + err[1] : WatchUi.loadResource($.Rez.Strings.NoData) as String;
         }
-        var i = Departures.firstCatchable(trains);
+        var walk = Schedule.walkMinutes();
+        var i = Departures.firstCatchable(trains, now, walk);
         if (i < 0) {
             return WatchUi.loadResource($.Rez.Strings.NoTrains) as String;
         }
         var dep = trains[i][Departures.DEP] as Number;
-        var mins = Departures.leaveIn(dep) + " " + WatchUi.loadResource($.Rez.Strings.Min);
-        if (Schedule.walkMinutes() > 0) {
+        var mins = Departures.leaveIn(dep, now, walk) + " " + WatchUi.loadResource($.Rez.Strings.Min);
+        if (walk > 0) {
             mins = WatchUi.loadResource($.Rez.Strings.LeaveIn) + " " + mins;
         }
         return Departures.hhmm(dep) + " · " + mins;

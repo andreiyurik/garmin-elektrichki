@@ -21,8 +21,8 @@ module Departures {
     }
 
     //! true = home -> work. Automatic by SwitchHour, inverted by START.
-    function towardWork(flipped as Boolean) as Boolean {
-        var morning = System.getClockTime().hour < Schedule.switchHour();
+    function towardWork(flipped as Boolean, now as Number) as Boolean {
+        var morning = now / 60 < Schedule.switchHour();
         return morning != flipped;
     }
 
@@ -38,18 +38,19 @@ module Departures {
         return toWork ? [a, b] : [b, a];
     }
 
-    //! Up to `count` trains departing from now on, as
+    //! Up to `count` trains departing at or after `now` (minutes since
+    //! midnight), as
     //! [departureMinute, durationMinutes, flags, terminal, platform].
     //! departureMinute counts from today's midnight; tomorrow's trains get
     //! +1440 so the list continues past the last train of the day.
     //! Returns null when no schedule is cached for today.
-    function upcoming(toWork as Boolean, count as Number) as Array<Array>? {
+    function upcoming(toWork as Boolean, count as Number, now as Number) as Array<Array>? {
         var today = Schedule.load(Schedule.dateString(0));
         if (today == null) {
             return null;
         }
         var result = [] as Array<Array>;
-        collect(today, toWork, nowMinutes(), 0, count, result);
+        collect(today, toWork, now, 0, count, result);
         today = null; // the glance has 32 KB: never hold two days at once
         if (result.size() < count) {
             var tomorrow = Schedule.load(Schedule.dateString(1));
@@ -75,15 +76,15 @@ module Departures {
     }
 
     //! Minutes until the user should leave for this train (negative = missed).
-    //! With WalkMinutes = 0 this is simply minutes to departure.
-    function leaveIn(dep as Number) as Number {
-        return dep - Schedule.walkMinutes() - nowMinutes();
+    //! With walk = 0 this is simply minutes to departure.
+    function leaveIn(dep as Number, now as Number, walk as Number) as Number {
+        return dep - walk - now;
     }
 
     //! Index of the first train the user can still catch, or -1.
-    function firstCatchable(trains as Array<Array>) as Number {
+    function firstCatchable(trains as Array<Array>, now as Number, walk as Number) as Number {
         for (var i = 0; i < trains.size(); i++) {
-            if (leaveIn(trains[i][DEP] as Number) >= 0) {
+            if (leaveIn(trains[i][DEP] as Number, now, walk) >= 0) {
                 return i;
             }
         }
@@ -97,13 +98,14 @@ module Departures {
         if (err == null) {
             return null;
         }
-        var query = err["q"];
-        if (query instanceof String) {
-            return [WatchUi.loadResource($.Rez.Strings.NotFound) as String, query];
+        var kind = err["k"];
+        var title = $.Rez.Strings.ServerError;
+        if (kind == Schedule.ERROR_PHONE) {
+            title = $.Rez.Strings.NoPhone;
+        } else if (kind == Schedule.ERROR_STATION) {
+            title = $.Rez.Strings.NotFound;
         }
-        var code = err["c"] as Number;
-        var title = code < 0 ? $.Rez.Strings.NoPhone : $.Rez.Strings.ServerError;
-        return [WatchUi.loadResource(title) as String, code.toString()];
+        return [WatchUi.loadResource(title) as String, err["d"] as String];
     }
 
     function hhmm(minute as Number) as String {

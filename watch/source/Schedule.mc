@@ -10,7 +10,8 @@ import Toybox.Time.Gregorian;
 //! One Storage entry per day ("d:YYYY-MM-DD"), as returned by the proxy (v2):
 //!   {"a": title, "b": title, "ab": [dep, dur, flags, terminal, platform, ...],
 //!    "ba": [...], "s": [strings], "r": routeKey, "t": fetchedAtEpochSeconds}
-//! The last failed fetch is kept in "err" so the views can explain it.
+//! The last failed fetch is kept in "err" as {"k": kind, "d": detail, "r": routeKey}
+//! so the views can explain it.
 //! Storage limits (Persisting Data docs): 8 KB per value, 128 KB total;
 //! one day for one route is ~2-4 KB.
 (:background, :glance)
@@ -21,6 +22,13 @@ module Schedule {
     const FORMAT = 2;
     // Flags only mark express kinds (proxy compact.js): 0 = regular train.
     const FLAG_EXPRESS = 1;
+
+    // Kinds of the last fetch error.
+    enum {
+        ERROR_PHONE = 1,   // no phone / Bluetooth / timeout: try again later
+        ERROR_SERVER = 2,  // the proxy answered with an error or bad data
+        ERROR_STATION = 3  // a station name was not found; detail = the name
+    }
 
     function home() as String {
         return Properties.getValue("HomeStation") as String;
@@ -57,7 +65,10 @@ module Schedule {
 
     //! "2026-10-07" for today + dayOffset, device local time.
     function dateString(dayOffset as Number) as String {
-        var moment = Time.today().add(new Time.Duration(dayOffset * Gregorian.SECONDS_PER_DAY));
+        return dateOf(Time.today().add(new Time.Duration(dayOffset * Gregorian.SECONDS_PER_DAY)));
+    }
+
+    function dateOf(moment as Time.Moment) as String {
         var info = Gregorian.info(moment, Time.FORMAT_SHORT);
         return Lang.format("$1$-$2$-$3$", [
             info.year,
@@ -78,17 +89,51 @@ module Schedule {
         return null;
     }
 
-    function save(date as String, day as Dictionary) as Void {
+    //! Checks a proxy response before it is stored, so a changed or broken
+    //! response becomes an error message instead of a crash in the views.
+    function isValid(day as Dictionary) as Boolean {
+        var version = day["v"];
+        var strings = day["s"];
+        if (!(version instanceof Number) || version != FORMAT
+            || !(day["a"] instanceof String) || !(day["b"] instanceof String)
+            || !(strings instanceof Array)) {
+            return false;
+        }
+        for (var i = 0; i < strings.size(); i++) {
+            if (!(strings[i] instanceof String)) {
+                return false;
+            }
+        }
+        return isValidTrains(day["ab"] as Object?, strings.size())
+            && isValidTrains(day["ba"] as Object?, strings.size());
+    }
+
+    function isValidTrains(trains as Object?, stringCount as Number) as Boolean {
+        if (!(trains instanceof Array) || trains.size() % STRIDE != 0) {
+            return false;
+        }
+        for (var i = 0; i < trains.size(); i++) {
+            var value = trains[i];
+            if (!(value instanceof Number) || value < 0) {
+                return false;
+            }
+            var field = i % STRIDE;
+            if (field >= 3 && value >= stringCount) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function save(date as String, day as Dictionary, now as Number) as Void {
         day["r"] = routeKey();
-        day["t"] = Time.now().value();
+        day["t"] = now;
         Storage.setValue("d:" + date, day as Dictionary<Storage.KeyType, Storage.ValueType>);
         Storage.deleteValue("err");
     }
 
-    //! code: HTTP status or a negative Communications error.
-    //! query: the station name the proxy could not find, if that was the cause.
-    function saveError(code as Number, query as String?) as Void {
-        Storage.setValue("err", { "c" => code, "q" => query, "r" => routeKey() });
+    function saveError(kind as Number, detail as String) as Void {
+        Storage.setValue("err", { "k" => kind, "d" => detail, "r" => routeKey() });
     }
 
     //! The last error for the current stations, or null.
@@ -101,11 +146,11 @@ module Schedule {
     }
 
     //! First date in [today, today + DAYS_AHEAD) that is missing or stale, or null.
-    function nextDateToFetch() as String? {
+    //! now: epoch seconds (Time.now().value()).
+    function nextDateToFetch(now as Number) as String? {
         if (!isConfigured()) {
             return null;
         }
-        var now = Time.now().value();
         for (var i = 0; i < DAYS_AHEAD; i++) {
             var date = dateString(i);
             var day = load(date);
