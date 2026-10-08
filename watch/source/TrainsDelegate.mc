@@ -7,6 +7,7 @@ import Toybox.WatchUi;
 class TrainsDelegate extends WatchUi.BehaviorDelegate {
     private var _view as TrainsView;
     private var _fetcher as Fetcher?;
+    private var _progressShown as Boolean = false;
 
     public function initialize(view as TrainsView) {
         BehaviorDelegate.initialize();
@@ -29,12 +30,11 @@ class TrainsDelegate extends WatchUi.BehaviorDelegate {
         return true;
     }
 
-    //! Fetches today (or the first missing day) in the foreground.
-    public function refresh(force as Boolean) as Void {
-        if (!Schedule.isConfigured()) {
-            return;
-        }
-        var date = force ? Schedule.dateString(0) : Schedule.nextDateToFetch(Time.now().value());
+    //! Automatic fetch of the first missing or stale day (on open, after a
+    //! settings change). Non-blocking: the screen stays usable, the footer says
+    //! "Loading…".
+    public function refresh() as Void {
+        var date = Schedule.nextDateToFetch(Time.now().value());
         if (date == null) {
             return;
         }
@@ -43,9 +43,53 @@ class TrainsDelegate extends WatchUi.BehaviorDelegate {
         (_fetcher as Fetcher).fetch(date);
     }
 
-    //! Errors are stored by Fetcher and shown in the footer.
     public function onFetched(code as Number) as Void {
         _view.setStatus("");
+    }
+
+    //! "Refresh now" from the menu: the user waits for it, so it shows the
+    //! native progress bar (UX guidelines) and a toast on success (API 3.4.0).
+    public function refreshNow() as Void {
+        if (!Schedule.isConfigured()) {
+            return;
+        }
+        _progressShown = true;
+        WatchUi.pushView(
+            new WatchUi.ProgressBar(WatchUi.loadResource($.Rez.Strings.Loading) as String, null),
+            new ProgressDelegate(method(:onProgressClosed)),
+            WatchUi.SLIDE_IMMEDIATE);
+        _fetcher = new Fetcher(method(:onRefreshedNow));
+        (_fetcher as Fetcher).fetch(Schedule.dateString(0));
+    }
+
+    public function onProgressClosed() as Void {
+        _progressShown = false;
+    }
+
+    public function onRefreshedNow(code as Number) as Void {
+        if (_progressShown) {
+            _progressShown = false;
+            WatchUi.popView(WatchUi.SLIDE_IMMEDIATE);
+        }
+        if (code == 200 && WatchUi has :showToast) {
+            WatchUi.showToast(WatchUi.loadResource($.Rez.Strings.Updated) as String, null);
+        }
+        WatchUi.requestUpdate();
+    }
+}
+
+//! BACK closes the progress bar; the download continues and is stored.
+class ProgressDelegate extends WatchUi.BehaviorDelegate {
+    private var _onClose as Method() as Void;
+
+    public function initialize(onClose as Method() as Void) {
+        BehaviorDelegate.initialize();
+        _onClose = onClose;
+    }
+
+    public function onBack() as Boolean {
+        _onClose.invoke();
+        return false; // the system pops the view
     }
 }
 
@@ -59,6 +103,6 @@ class TrainsMenuDelegate extends WatchUi.Menu2InputDelegate {
 
     public function onSelect(item as WatchUi.MenuItem) as Void {
         WatchUi.popView(WatchUi.SLIDE_DOWN);
-        _parent.refresh(true);
+        _parent.refreshNow();
     }
 }

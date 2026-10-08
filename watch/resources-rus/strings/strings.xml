@@ -24,6 +24,7 @@
     <string id="Missed">не успеть</string>
     <string id="Platform">пл.</string>
     <string id="Express">ЭКС</string>
+    <string id="Updated">Обновлено</string>
     <string id="MenuRefresh">Обновить сейчас</string>
     <string id="MenuSource">Данные: Яндекс.Расписания</string>
 </resources>

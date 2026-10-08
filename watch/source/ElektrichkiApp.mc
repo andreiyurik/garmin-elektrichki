@@ -33,7 +33,7 @@ class ElektrichkiApp extends Application.AppBase {
         ensureTemporalEvent();
         var view = new TrainsView();
         var delegate = new TrainsDelegate(view);
-        delegate.refresh(false);
+        delegate.refresh();
         _delegate = delegate;
         return [view, delegate];
     }
@@ -43,7 +43,7 @@ class ElektrichkiApp extends Application.AppBase {
     (:typecheck([disableBackgroundCheck, disableGlanceCheck]))
     public function onSettingsChanged() as Void {
         if (_delegate != null) {
-            (_delegate as TrainsDelegate).refresh(false);
+            (_delegate as TrainsDelegate).refresh();
         }
         WatchUi.requestUpdate();
     }
