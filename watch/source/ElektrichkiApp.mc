@@ -11,6 +11,9 @@ import Toybox.WatchUi;
 class ElektrichkiApp extends Application.AppBase {
     private const REFRESH_SECONDS = 60 * 60;
 
+    (:typecheck([disableBackgroundCheck, disableGlanceCheck]))
+    private var _delegate as TrainsDelegate?;
+
     public function initialize() {
         AppBase.initialize();
     }
@@ -31,14 +34,17 @@ class ElektrichkiApp extends Application.AppBase {
         var view = new TrainsView();
         var delegate = new TrainsDelegate(view);
         delegate.refresh(false);
+        _delegate = delegate;
         return [view, delegate];
     }
 
-    //! Stations changed. Cached days carry their route key, so the old route's
-    //! days are ignored and the view or the next background run fetches anew.
-    (:typecheck(disableBackgroundCheck))
+    //! Called when settings change in Garmin Connect while the app runs.
+    //! Cached days carry their route key, so new stations simply fetch anew.
+    (:typecheck([disableBackgroundCheck, disableGlanceCheck]))
     public function onSettingsChanged() as Void {
-        ensureTemporalEvent();
+        if (_delegate != null) {
+            (_delegate as TrainsDelegate).refresh(false);
+        }
         WatchUi.requestUpdate();
     }
 

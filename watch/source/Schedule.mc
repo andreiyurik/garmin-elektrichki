@@ -19,8 +19,8 @@ module Schedule {
     const STALE_SECONDS = 12 * 60 * 60;
     const STRIDE = 5;
     const FORMAT = 2;
+    // Flags only mark express kinds (proxy compact.js): 0 = regular train.
     const FLAG_EXPRESS = 1;
-    const FLAG_AEROEXPRESS = 2;
 
     function home() as String {
         return Properties.getValue("HomeStation") as String;

@@ -50,6 +50,7 @@ module Departures {
         }
         var result = [] as Array<Array>;
         collect(today, toWork, nowMinutes(), 0, count, result);
+        today = null; // the glance has 32 KB: never hold two days at once
         if (result.size() < count) {
             var tomorrow = Schedule.load(Schedule.dateString(1));
             if (tomorrow != null) {
@@ -63,10 +64,10 @@ module Departures {
                      count as Number, out as Array<Array>) as Void {
         var trains = day[toWork ? "ab" : "ba"] as Array<Number>;
         var strings = day["s"] as Array<String>;
-        var skipMask = Schedule.hideExpress() ? Schedule.FLAG_EXPRESS | Schedule.FLAG_AEROEXPRESS : 0;
+        var hideExpress = Schedule.hideExpress();
         var stride = Schedule.STRIDE;
         for (var i = 0; i + stride - 1 < trains.size() && out.size() < count; i += stride) {
-            if (trains[i] >= fromMinute && (trains[i + 2] & skipMask) == 0) {
+            if (trains[i] >= fromMinute && !(hideExpress && trains[i + 2] != 0)) {
                 out.add([trains[i] + shift, trains[i + 1], trains[i + 2],
                          strings[trains[i + 3]], strings[trains[i + 4]]]);
             }

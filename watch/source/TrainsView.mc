@@ -110,7 +110,7 @@ class TrainsView extends WatchUi.View {
             dc.setColor(timeColor, Graphics.COLOR_TRANSPARENT);
             dc.drawText(left, y, font, time, Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
 
-            if (((train[Departures.FLAGS] as Number) & (Schedule.FLAG_EXPRESS | Schedule.FLAG_AEROEXPRESS)) != 0) {
+            if ((train[Departures.FLAGS] as Number) != 0) {
                 dc.setColor(missed ? Graphics.COLOR_DK_GRAY : Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
                 dc.drawText(left + dc.getTextWidthInPixels(time, font) + 6, y, Graphics.FONT_XTINY,
                     WatchUi.loadResource($.Rez.Strings.Express) as String,

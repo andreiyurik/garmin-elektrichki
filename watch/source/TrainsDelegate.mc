@@ -19,8 +19,11 @@ class TrainsDelegate extends WatchUi.BehaviorDelegate {
 
     public function onMenu() as Boolean {
         var menu = new WatchUi.Menu2({ :title => WatchUi.loadResource($.Rez.Strings.AppName) as String });
-        menu.addItem(new WatchUi.MenuItem(WatchUi.loadResource($.Rez.Strings.MenuRefresh) as String, null, :refresh, null));
-        menu.addItem(new WatchUi.MenuItem(WatchUi.loadResource($.Rez.Strings.MenuSource) as String, null, :source, null));
+        // Yandex attribution rides along as the sub-label of the only action.
+        menu.addItem(new WatchUi.MenuItem(
+            WatchUi.loadResource($.Rez.Strings.MenuRefresh) as String,
+            WatchUi.loadResource($.Rez.Strings.MenuSource) as String,
+            :refresh, null));
         WatchUi.pushView(menu, new TrainsMenuDelegate(self), WatchUi.SLIDE_UP);
         return true;
     }
@@ -55,8 +58,6 @@ class TrainsMenuDelegate extends WatchUi.Menu2InputDelegate {
 
     public function onSelect(item as WatchUi.MenuItem) as Void {
         WatchUi.popView(WatchUi.SLIDE_DOWN);
-        if (item.getId() == :refresh) {
-            _parent.refresh(true);
-        }
+        _parent.refresh(true);
     }
 }
