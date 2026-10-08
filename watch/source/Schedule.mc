@@ -23,6 +23,7 @@ module Schedule {
     const FORMAT = 3;
     // Flags only mark express kinds (proxy compact.js): 0 = regular train.
     const FLAG_EXPRESS = 1;
+    const FLAG_AEROEXPRESS = 2;
 
     // Kinds of the last fetch error.
     enum {

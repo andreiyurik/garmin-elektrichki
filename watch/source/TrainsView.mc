@@ -114,10 +114,12 @@ class TrainsView extends WatchUi.View {
             dc.setColor(timeColor, Graphics.COLOR_TRANSPARENT);
             dc.drawText(left, y, font, time, Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
 
-            if ((train[Departures.FLAGS] as Number) != 0) {
+            var flags = train[Departures.FLAGS] as Number;
+            if (flags != 0) {
+                var label = flags == Schedule.FLAG_AEROEXPRESS ? $.Rez.Strings.Aeroexpress : $.Rez.Strings.Express;
                 dc.setColor(missed ? Graphics.COLOR_DK_GRAY : Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
                 dc.drawText(left + dc.getTextWidthInPixels(time, font) + 6, y, Graphics.FONT_XTINY,
-                    WatchUi.loadResource($.Rez.Strings.Express) as String,
+                    WatchUi.loadResource(label) as String,
                     Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
             }
 

@@ -8,3 +8,4 @@ bin/
 proxy/node_modules/
 proxy/.wrangler/
 proxy/.dev.vars
+proxy/src/stations.json

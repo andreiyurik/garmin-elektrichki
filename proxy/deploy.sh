@@ -11,6 +11,9 @@ cd "$(dirname "$0")"
 
 [[ -s $KEY_FILE ]] || { echo "No API key in $KEY_FILE" >&2; exit 1; }
 
+# Station names -> codes; Yandex data, built here and never committed.
+YANDEX_API_KEY=$(cat "$KEY_FILE") node scripts/build-stations.mjs
+
 if ! yc serverless function get --name "$NAME" >/dev/null 2>&1; then
   yc serverless function create --name "$NAME"
   yc serverless function allow-unauthenticated-invoke "$NAME"
