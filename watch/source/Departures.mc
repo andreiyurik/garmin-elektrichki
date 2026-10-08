@@ -1,9 +1,19 @@
 import Toybox.Lang;
 import Toybox.System;
+import Toybox.WatchUi;
 
-//! Picks the next trains from the cached schedule. No network access.
+//! Picks the next trains from the cached schedule and describes problems.
+//! No network access.
 (:glance)
 module Departures {
+    // Train fields returned by upcoming().
+    enum {
+        DEP,
+        DUR,
+        FLAGS,
+        TERMINAL,
+        PLATFORM
+    }
 
     function nowMinutes() as Number {
         var clock = System.getClockTime();
@@ -28,34 +38,70 @@ module Departures {
         return toWork ? [a, b] : [b, a];
     }
 
-    //! Up to `count` trains as [departureMinute, durationMinutes, flags].
+    //! Up to `count` trains departing from now on, as
+    //! [departureMinute, durationMinutes, flags, terminal, platform].
     //! departureMinute counts from today's midnight; tomorrow's trains get
     //! +1440 so the list continues past the last train of the day.
     //! Returns null when no schedule is cached for today.
-    function upcoming(toWork as Boolean, count as Number) as Array<Array<Number> >? {
-        var key = toWork ? "ab" : "ba";
-        var result = [] as Array<Array<Number> >;
+    function upcoming(toWork as Boolean, count as Number) as Array<Array>? {
         var today = Schedule.load(Schedule.dateString(0));
         if (today == null) {
             return null;
         }
-        collect(today[key] as Array<Number>, nowMinutes(), 0, count, result);
+        var result = [] as Array<Array>;
+        collect(today, toWork, nowMinutes(), 0, count, result);
         if (result.size() < count) {
             var tomorrow = Schedule.load(Schedule.dateString(1));
             if (tomorrow != null) {
-                collect(tomorrow[key] as Array<Number>, 0, 24 * 60, count, result);
+                collect(tomorrow, toWork, 0, 24 * 60, count, result);
             }
         }
         return result;
     }
 
-    function collect(trains as Array<Number>, fromMinute as Number, shift as Number,
-                     count as Number, out as Array<Array<Number> >) as Void {
-        for (var i = 0; i + 2 < trains.size() && out.size() < count; i += Schedule.STRIDE) {
-            if (trains[i] >= fromMinute) {
-                out.add([trains[i] + shift, trains[i + 1], trains[i + 2]]);
+    function collect(day as Dictionary, toWork as Boolean, fromMinute as Number, shift as Number,
+                     count as Number, out as Array<Array>) as Void {
+        var trains = day[toWork ? "ab" : "ba"] as Array<Number>;
+        var strings = day["s"] as Array<String>;
+        var skipMask = Schedule.hideExpress() ? Schedule.FLAG_EXPRESS | Schedule.FLAG_AEROEXPRESS : 0;
+        var stride = Schedule.STRIDE;
+        for (var i = 0; i + stride - 1 < trains.size() && out.size() < count; i += stride) {
+            if (trains[i] >= fromMinute && (trains[i + 2] & skipMask) == 0) {
+                out.add([trains[i] + shift, trains[i + 1], trains[i + 2],
+                         strings[trains[i + 3]], strings[trains[i + 4]]]);
             }
         }
+    }
+
+    //! Minutes until the user should leave for this train (negative = missed).
+    //! With WalkMinutes = 0 this is simply minutes to departure.
+    function leaveIn(dep as Number) as Number {
+        return dep - Schedule.walkMinutes() - nowMinutes();
+    }
+
+    //! Index of the first train the user can still catch, or -1.
+    function firstCatchable(trains as Array<Array>) as Number {
+        for (var i = 0; i < trains.size(); i++) {
+            if (leaveIn(trains[i][DEP] as Number) >= 0) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    //! A short explanation of the last failed fetch, or null.
+    function errorText() as String? {
+        var err = Schedule.lastError();
+        if (err == null) {
+            return null;
+        }
+        var query = err["q"];
+        if (query instanceof String) {
+            return WatchUi.loadResource($.Rez.Strings.NotFound) + " " + query;
+        }
+        var code = err["c"] as Number;
+        var text = code < 0 ? $.Rez.Strings.NoPhone : $.Rez.Strings.ServerError;
+        return WatchUi.loadResource(text) + " (" + code + ")";
     }
 
     function hhmm(minute as Number) as String {

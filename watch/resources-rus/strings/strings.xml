@@ -6,15 +6,23 @@
     <string id="SwitchTitle">Домой после (час)</string>
     <string id="SwitchPrompt">До этого часа показываются поезда из дома, после — домой</string>
     <string id="SwitchError">Введите час от 0 до 23</string>
-
+    <string id="WalkTitle">Дорога до станции (мин)</string>
+    <string id="WalkPrompt">Приложение подскажет, когда выходить. 0 — показывать минуты до отправления</string>
+    <string id="WalkError">Введите минуты от 0 до 60</string>
+    <string id="HideExpressTitle">Скрывать экспрессы</string>
     <string id="Min" scope="glance">мин</string>
     <string id="NoData" scope="glance">Расписание не загружено</string>
     <string id="NoStations" scope="glance">Укажите станции в Garmin Connect</string>
     <string id="NoTrains" scope="glance">Поездов нет</string>
-
+    <string id="LeaveIn" scope="glance">выход</string>
+    <string id="NotFound" scope="glance">Станция не найдена:</string>
+    <string id="NoPhone" scope="glance">Нет связи с телефоном</string>
+    <string id="ServerError" scope="glance">Сервис недоступен</string>
     <string id="Loading">Загрузка…</string>
-    <string id="Updated">Обновлено</string>
-    <string id="Error">Нет связи</string>
+    <string id="Scheduled">по расписанию</string>
+    <string id="UntilLeave">мин до выхода</string>
+    <string id="Missed">не успеть</string>
+    <string id="Platform">пл.</string>
     <string id="Express">ЭКС</string>
     <string id="MenuRefresh">Обновить сейчас</string>
     <string id="MenuSource">Данные: Яндекс.Расписания</string>

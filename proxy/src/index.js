@@ -3,10 +3,12 @@
 // Docs: https://yandex.cloud/ru/docs/functions/lang/nodejs/handler
 //
 //   GET <function-url>?a=<station>&b=<station>&date=YYYY-MM-DD
-//     -> {"v":1,"date":"…","a":"Одинцово","b":"Беговая","ab":[dep,dur,flags,…],"ba":[…]}
+//     -> {"v":2,"date":"…","a":"Одинцово","b":"Беговая",
+//         "ab":[dep,dur,flags,terminal,platform,…],"ba":[…],"s":["","Беговая","2",…]}
+//     404 {"error":"station","which":"a"|"b","q":"…"} when a name is not found
 //   GET <function-url>?q=<text>
 //     -> {"stations":[{code,title,direction},…]}  (check what a name resolves to)
-const { compactSegments } = require("./compact.js");
+const { compactDay } = require("./compact.js");
 const { resolveStation, searchStations } = require("./stations.js");
 const { searchAll, UpstreamError } = require("./yandex.js");
 
@@ -33,9 +35,9 @@ async function handleRequest(params, { apiKey, fetchImpl = fetch, now = Date.now
   const date = params.date ?? "";
   if (!isAllowedDate(date, now)) return json(400, { error: "date" });
   const a = resolveStation(params.a);
-  if (!a) return json(404, { error: "station", which: "a" });
+  if (!a) return json(404, { error: "station", which: "a", q: params.a ?? "" });
   const b = resolveStation(params.b);
-  if (!b) return json(404, { error: "station", which: "b" });
+  if (!b) return json(404, { error: "station", which: "b", q: params.b ?? "" });
 
   // Keyed on resolved codes so "Одинцово" and "одинцово" share one entry.
   const key = `${a.code}/${b.code}/${date}`;
@@ -56,7 +58,7 @@ async function handleRequest(params, { apiKey, fetchImpl = fetch, now = Date.now
     throw e;
   }
 
-  const body = { v: 1, date, a: a.title, b: b.title, ab: compactSegments(ab), ba: compactSegments(ba) };
+  const body = { v: 2, date, a: a.title, b: b.title, ...compactDay(ab, ba) };
   if (cache.size >= CACHE_MAX) cache.delete(cache.keys().next().value);
   cache.set(key, { at: now, body });
   return json(200, body);

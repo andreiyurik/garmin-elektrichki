@@ -9,5 +9,11 @@
         <setting propertyKey="@Properties.SwitchHour" title="@Strings.SwitchTitle" prompt="@Strings.SwitchPrompt">
             <settingConfig type="numeric" min="0" max="23" errorMessage="@Strings.SwitchError" />
         </setting>
+        <setting propertyKey="@Properties.WalkMinutes" title="@Strings.WalkTitle" prompt="@Strings.WalkPrompt">
+            <settingConfig type="numeric" min="0" max="60" errorMessage="@Strings.WalkError" />
+        </setting>
+        <setting propertyKey="@Properties.HideExpress" title="@Strings.HideExpressTitle">
+            <settingConfig type="boolean" />
+        </setting>
     </settings>
 </resources>

@@ -39,8 +39,9 @@ class TrainsDelegate extends WatchUi.BehaviorDelegate {
         (_fetcher as Fetcher).fetch(date);
     }
 
+    //! Errors are stored by Fetcher and shown in the footer.
     public function onFetched(code as Number) as Void {
-        _view.setStatus(code == 200 ? "" : WatchUi.loadResource($.Rez.Strings.Error) + " (" + code + ")");
+        _view.setStatus("");
     }
 }
 

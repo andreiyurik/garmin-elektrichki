@@ -1,6 +1,6 @@
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
-const { compactSegments, FLAG_EXPRESS, toMinutes } = require("../src/compact.js");
+const { compactDay, FLAG_EXPRESS, terminalOf, toMinutes } = require("../src/compact.js");
 const { normalize, resolveStation } = require("../src/stations.js");
 const { searchAll } = require("../src/yandex.js");
 
@@ -19,13 +19,26 @@ test("toMinutes reads the Moscow wall clock", () => {
   assert.equal(toMinutes("2026-10-07T23:59:00+03:00"), 1439);
 });
 
-test("compactSegments sorts, flattens, flags express, drops transfers", () => {
-  const out = compactSegments([
-    seg("09:03", "09:26", 23),
-    seg("08:51", "09:08", 17, "express"),
-    seg("08:00", "09:00", 60, null, { has_transfers: true }),
-  ]);
-  assert.deepEqual(out, [531, 17, FLAG_EXPRESS, 543, 23, 0]);
+test("terminalOf takes the last part of the thread title", () => {
+  assert.equal(terminalOf({ title: "Москва (Курский вокзал) — Петушки" }), "Петушки");
+  assert.equal(terminalOf({ short_title: "Одинцово — Лобня", title: "x" }), "Лобня");
+  assert.equal(terminalOf({ title: "Кольцевой" }), "Кольцевой");
+  assert.equal(terminalOf(undefined), "");
+});
+
+test("compactDay sorts, flags express, drops transfers, shares a string table", () => {
+  const day = compactDay(
+    [
+      seg("09:03", "09:26", 23, null, { departure_platform: "2", thread: { title: "Одинцово — Лобня" } }),
+      seg("08:51", "09:08", 17, "express", { departure_platform: "2", thread: { express_type: "express", title: "Одинцово — Беговая" } }),
+      seg("08:00", "09:00", 60, null, { has_transfers: true }),
+    ],
+    [seg("18:10", "18:33", 23, null, { departure_platform: null, thread: { title: "Лобня — Одинцово" } })],
+  );
+  // Strings are numbered in input order; rows are then sorted by time.
+  assert.deepEqual(day.s, ["", "Лобня", "2", "Беговая", "Одинцово"]);
+  assert.deepEqual(day.ab, [531, 17, FLAG_EXPRESS, 3, 2, 543, 23, 0, 1, 2]);
+  assert.deepEqual(day.ba, [1090, 23, 0, 4, 0]);
 });
 
 const STATIONS = [
@@ -82,13 +95,18 @@ test("handleRequest validates input and caches by resolved codes", async () => {
   const ctx = { apiKey: "k", fetchImpl: fakeFetch, now };
 
   assert.equal((await handleRequest({ a: "x", b: "y", date: "bad" }, ctx)).statusCode, 400);
-  assert.equal((await handleRequest({ a: "Нет", b: "Беговая", date: "2026-10-07" }, ctx)).statusCode, 404);
+  const missing = await handleRequest({ a: "Нет", b: "Беговая", date: "2026-10-07" }, ctx);
+  assert.equal(missing.statusCode, 404);
+  assert.deepEqual(JSON.parse(missing.body), { error: "station", which: "a", q: "Нет" });
 
   // stations.json is empty in the repo, so pass codes directly.
   const res = await handleRequest({ a: "s9600721", b: "s9601666", date: "2026-10-07" }, ctx);
   assert.equal(res.statusCode, 200);
-  assert.deepEqual(JSON.parse(res.body).ab, [522, 23, 0]);
-  assert.deepEqual(JSON.parse(res.body).ba, [1090, 23, 0]);
+  const body = JSON.parse(res.body);
+  assert.equal(body.v, 2);
+  assert.deepEqual(body.ab, [522, 23, 0, 0, 0]);
+  assert.deepEqual(body.ba, [1090, 23, 0, 0, 0]);
+  assert.deepEqual(body.s, [""]);
 
   await handleRequest({ a: "s9600721", b: "s9601666", date: "2026-10-07" }, ctx);
   assert.equal(calls, 2, "second call is served from cache");

@@ -29,6 +29,12 @@ class Fetcher {
     public function onReceive(code as Number, data as Dictionary or String or Null) as Void {
         if (code == 200 && data instanceof Dictionary && data["ab"] instanceof Array) {
             Schedule.save(_date, data);
+        } else {
+            var query = null;
+            if (data instanceof Dictionary && "station".equals(data["error"] as Object?)) {
+                query = data["q"] as String?;
+            }
+            Schedule.saveError(code, query);
         }
         _done.invoke(code);
     }

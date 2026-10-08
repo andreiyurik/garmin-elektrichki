@@ -7,16 +7,20 @@ import Toybox.Time.Gregorian;
 
 //! Settings and the on-device schedule cache.
 //!
-//! One Storage entry per day ("d:YYYY-MM-DD"), as returned by the proxy:
-//!   {"a": title, "b": title, "ab": [dep, dur, flags, ...], "ba": [...],
-//!    "r": routeKey, "t": fetchedAtEpochSeconds}
+//! One Storage entry per day ("d:YYYY-MM-DD"), as returned by the proxy (v2):
+//!   {"a": title, "b": title, "ab": [dep, dur, flags, terminal, platform, ...],
+//!    "ba": [...], "s": [strings], "r": routeKey, "t": fetchedAtEpochSeconds}
+//! The last failed fetch is kept in "err" so the views can explain it.
 //! Storage limits (Persisting Data docs): 8 KB per value, 128 KB total;
 //! one day for one route is ~2-4 KB.
 (:background, :glance)
 module Schedule {
     const DAYS_AHEAD = 3;
     const STALE_SECONDS = 12 * 60 * 60;
-    const STRIDE = 3;
+    const STRIDE = 5;
+    const FORMAT = 2;
+    const FLAG_EXPRESS = 1;
+    const FLAG_AEROEXPRESS = 2;
 
     function home() as String {
         return Properties.getValue("HomeStation") as String;
@@ -28,6 +32,14 @@ module Schedule {
 
     function switchHour() as Number {
         return Properties.getValue("SwitchHour") as Number;
+    }
+
+    function walkMinutes() as Number {
+        return Properties.getValue("WalkMinutes") as Number;
+    }
+
+    function hideExpress() as Boolean {
+        return Properties.getValue("HideExpress") as Boolean;
     }
 
     function proxyUrl() as String {
@@ -56,7 +68,11 @@ module Schedule {
 
     function load(date as String) as Dictionary? {
         var day = Storage.getValue("d:" + date);
-        if (day instanceof Dictionary && routeKey().equals(day["r"])) {
+        if (!(day instanceof Dictionary)) {
+            return null;
+        }
+        var version = day["v"];
+        if (version instanceof Number && version == FORMAT && routeKey().equals(day["r"])) {
             return day as Dictionary;
         }
         return null;
@@ -66,6 +82,22 @@ module Schedule {
         day["r"] = routeKey();
         day["t"] = Time.now().value();
         Storage.setValue("d:" + date, day as Dictionary<Storage.KeyType, Storage.ValueType>);
+        Storage.deleteValue("err");
+    }
+
+    //! code: HTTP status or a negative Communications error.
+    //! query: the station name the proxy could not find, if that was the cause.
+    function saveError(code as Number, query as String?) as Void {
+        Storage.setValue("err", { "c" => code, "q" => query, "r" => routeKey() });
+    }
+
+    //! The last error for the current stations, or null.
+    function lastError() as Dictionary? {
+        var err = Storage.getValue("err");
+        if (err instanceof Dictionary && routeKey().equals(err["r"])) {
+            return err as Dictionary;
+        }
+        return null;
     }
 
     //! First date in [today, today + DAYS_AHEAD) that is missing or stale, or null.

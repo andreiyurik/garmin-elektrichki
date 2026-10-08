@@ -3,6 +3,8 @@
         <property id="HomeStation" type="string"></property>
         <property id="WorkStation" type="string"></property>
         <property id="SwitchHour" type="number">13</property>
+        <property id="WalkMinutes" type="number">0</property>
+        <property id="HideExpress" type="boolean">false</property>
         <!-- Not a user setting: URL of the Yandex Cloud Function in /proxy (set after deploy) -->
         <property id="ProxyUrl" type="string">https://functions.yandexcloud.net/FUNCTION_ID</property>
     </properties>
