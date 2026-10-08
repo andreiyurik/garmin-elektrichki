@@ -10,7 +10,7 @@ cd "$(dirname "$0")"
 SDK=${CIQ_SDK:-$(cat ~/.Garmin/ConnectIQ/current-sdk.cfg 2>/dev/null || true)}
 KEY=${CIQ_KEY:-~/.Garmin/ConnectIQ/keys/developer_key.der}
 DEVICES_DIR=~/.Garmin/ConnectIQ/Devices
-TEST_DEVICE=${TEST_DEVICE:-vivoactive4}
+TEST_DEVICE=${TEST_DEVICE:-fenix6}
 OUT=$(mktemp -d)
 trap 'rm -rf "$OUT"' EXIT
 
@@ -35,9 +35,10 @@ echo "== watch unit tests on $TEST_DEVICE"
 "$SDK/bin/monkeyc" -f watch/monkey.jungle -d "$TEST_DEVICE" -o "$OUT/test.prg" -y "$KEY" -l 3 --unit-test 2>&1 \
   | grep -v WARNING || true
 if ! pgrep -x simulator >/dev/null; then
-  (cd "$SDK/bin" && WEBKIT_DISABLE_DMABUF_RENDERER=1 setsid ./simulator >/dev/null 2>&1 < /dev/null &)
+  # setsid -f always forks, so the simulator is never this script's child.
+  (cd "$SDK/bin" && WEBKIT_DISABLE_DMABUF_RENDERER=1 setsid -f ./simulator >/dev/null 2>&1 < /dev/null)
   sleep 8
 fi
-result=$("$SDK/bin/monkeydo" "$OUT/test.prg" "$TEST_DEVICE" -t 2>&1 || true)
+result=$(timeout 300 "$SDK/bin/monkeydo" "$OUT/test.prg" "$TEST_DEVICE" -t 2>&1 || true)
 echo "$result" | grep -E 'FAILED:|^Ran |PASSED|FAILED \(' || { echo "$result"; exit 1; }
 echo "$result" | grep -q '^PASSED' || exit 1

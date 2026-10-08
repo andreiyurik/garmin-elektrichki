@@ -14,8 +14,14 @@ class ElektrichkiApp extends Application.AppBase {
     (:typecheck([disableBackgroundCheck, disableGlanceCheck]))
     private var _delegate as TrainsDelegate?;
 
+    //! Registers the hourly background fetch in every mode, as the
+    //! Backgrounding docs do in the app constructor: on fenix 6 people often
+    //! only look at the glance and never open the full widget.
     public function initialize() {
         AppBase.initialize();
+        if (Background.getTemporalEventRegisteredTime() == null) {
+            Background.registerForTemporalEvent(new Time.Duration(REFRESH_SECONDS));
+        }
     }
 
     (:typecheck(disableGlanceCheck))
@@ -30,7 +36,6 @@ class ElektrichkiApp extends Application.AppBase {
 
     (:typecheck([disableBackgroundCheck, disableGlanceCheck]))
     public function getInitialView() as [WatchUi.Views] or [WatchUi.Views, WatchUi.InputDelegates] {
-        ensureTemporalEvent();
         var view = new TrainsView();
         var delegate = new TrainsDelegate(view);
         delegate.refresh();
@@ -53,11 +58,5 @@ class ElektrichkiApp extends Application.AppBase {
     (:typecheck(disableBackgroundCheck))
     public function onBackgroundData(data as Application.PersistableType) as Void {
         WatchUi.requestUpdate();
-    }
-
-    private function ensureTemporalEvent() as Void {
-        if (Background.getTemporalEventRegisteredTime() == null) {
-            Background.registerForTemporalEvent(new Time.Duration(REFRESH_SECONDS));
-        }
     }
 }
