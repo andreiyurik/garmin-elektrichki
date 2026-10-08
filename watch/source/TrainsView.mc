@@ -101,8 +101,10 @@ class TrainsView extends WatchUi.View {
 
             if (trains[i][2] != 0) {
                 dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
-                dc.drawText(w * 15 / 100, y, Graphics.FONT_XTINY, expLabel + " ",
-                    Graphics.TEXT_JUSTIFY_RIGHT | Graphics.TEXT_JUSTIFY_VCENTER);
+                // Right after the time: the left edge is clipped on round screens.
+                var x = w * 16 / 100 + dc.getTextWidthInPixels(Departures.hhmm(dep), font) + 6;
+                dc.drawText(x, y, Graphics.FONT_XTINY, expLabel,
+                    Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
             }
         }
     }
