@@ -7,7 +7,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-SDK=${CIQ_SDK:-$(cat ~/.Garmin/ConnectIQ/current-sdk.cfg 2>/dev/null)}
+SDK=${CIQ_SDK:-$(cat ~/.Garmin/ConnectIQ/current-sdk.cfg 2>/dev/null || true)}
 KEY=${CIQ_KEY:-~/.Garmin/ConnectIQ/keys/developer_key.der}
 DEVICES_DIR=~/.Garmin/ConnectIQ/Devices
 TEST_DEVICE=${TEST_DEVICE:-vivoactive4}
